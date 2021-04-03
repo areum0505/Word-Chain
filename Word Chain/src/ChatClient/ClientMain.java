@@ -1,6 +1,9 @@
 package ChatClient;
 
+import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -9,14 +12,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class ClientMain extends JFrame {
 	private Socket socket;
+	
+	private ArrayList<String> wordList;
 
 	private boolean myTurn = false;
 
@@ -25,28 +41,38 @@ public class ClientMain extends JFrame {
 	private JTextField userName;
 	private JTextField IPText;
 	private JTextField portText;
+	private JLabel guidance;
 	private JTextField inputText;
 	private JButton sendButton;
 	private JButton connectionButton;
+	private JTextArea definition;
+	
 
 	public ClientMain() {
-		super("³¡¸»ÀÕ±â");
+		super("ëë§ì‡ê¸°");
+		
+		wordList = new ArrayList<String>();
 
 		panel = new JPanel();
+		panel.setLayout(null);
 
-		userName = new JTextField("È«±æµ¿", 10);
+		userName = new JTextField("í™ê¸¸ë™");
+		userName.setBounds(15, 5, 135, 25);
 		panel.add(userName);
-		IPText = new JTextField("127.0.0.1", 10);
+		IPText = new JTextField("127.0.0.1");	// 10.96.123.53
+		IPText.setBounds(155, 5, 135, 25);
 		panel.add(IPText);
-		portText = new JTextField("9876", 10);
+		portText = new JTextField("9876");
+		portText.setBounds(295, 5, 135, 25);
 		panel.add(portText);
 
-		connectionButton = new JButton("Á¢¼ÓÇÏ±â");
-		connectionButton.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 15));
+		connectionButton = new JButton("ì ‘ì†í•˜ê¸°");
+		connectionButton.setBounds(440, 5, 90, 23);
+		connectionButton.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 15));
 		connectionButton.requestFocus();
 		connectionButton.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
-				if (connectionButton.getText().equals("Á¢¼ÓÇÏ±â")) {					
+				if (connectionButton.getText().equals("ì ‘ì†í•˜ê¸°")) {
 					int port = 9876;
 					try {
 						port = Integer.parseInt(portText.getText());
@@ -54,39 +80,83 @@ public class ClientMain extends JFrame {
 						e2.printStackTrace();
 					}
 					startClient(IPText.getText(), port);
-					connectionButton.setText("Á¾·áÇÏ±â");
+					connectionButton.setText("ì¢…ë£Œí•˜ê¸°");
 				} else {
 					myTurn = false;
 					stopClient();
-					connectionButton.setText("Á¢¼ÓÇÏ±â");
+					connectionButton.setText("ì ‘ì†í•˜ê¸°");
 					inputText.setEditable(false);
 					sendButton.setVisible(false);
 				}
 			}
 		});
 		panel.add(connectionButton);
+		
+		guidance = new JLabel();
+		guidance.setBounds(75, 35, 400, 20);
+		guidance.setHorizontalAlignment(JLabel.CENTER);
+		guidance.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 15));
+		guidance.setText("");
+		panel.add(guidance);
 
-		textField = new JTextField(19);
-		textField.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 25));
+		textField = new JTextField();
+		textField.setBounds(50, 60, 450, 40);
+		textField.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 25));
 		textField.setHorizontalAlignment(JTextField.CENTER);
 		textField.setEditable(false);
+		textField.setText("");
 		panel.add(textField);
 
-		inputText = new JTextField(18);
-		inputText.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 20));
+		inputText = new JTextField();
+		inputText.setBounds(50, 115, 365, 30);
+		inputText.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 20));
+		inputText.setText("");
 		inputText.setEditable(false);
+		inputText.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent e) {
+				if(e.getKeyCode() == 10) {
+					sendButton.doClick();
+				}
+			}
+		});
 		panel.add(inputText);
 
-		sendButton = new JButton("Àü¼Û");
-		sendButton.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 15));
+		sendButton = new JButton("ì „ì†¡");
+		sendButton.setBounds(550 - 50 - 80, 115, 80, 30);
+		sendButton.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 15));
 		sendButton.setVisible(false);
 		sendButton.addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
-				send(inputText.getText());	
+				String inputStr = inputText.getText().trim();
+				boolean inspectionWord = inspectionWord(inputStr);
+				boolean checkLength = inputStr.length() >= 2 ? true : false;
+				boolean checkOverlap = checkOverlap(inputStr);
+				boolean existDict = existenceDictionary(inputStr);
+				
+				if(inspectionWord && checkLength && checkOverlap && existDict ) {
+					wordList.add(inputStr);
+					guidance.setText("");
+					send(inputStr);
+				} else if (!inspectionWord) {
+					guidance.setText("ë§ˆì§€ë§‰ ê¸€ìì™€ ì²« ê¸€ìê°€ ë§ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+				} else if (!checkLength) {
+					guidance.setText("ê¸€ì ìˆ˜ê°€ ë„ˆë¬´ ì ìŠµë‹ˆë‹¤.");
+				} else if(!checkOverlap) {
+					guidance.setText("ì´ì „ì— ë‚˜ì™”ë˜ ë‹¨ì–´ì…ë‹ˆë‹¤.");
+				} else if (!existDict) {
+					guidance.setText("ì‚¬ì „ì— ì—†ëŠ” ë‹¨ì–´ì…ë‹ˆë‹¤.");
+				}
 			}
 		});
 		panel.add(sendButton);
-
+		
+		definition = new JTextArea();
+		definition.setBounds(50, 150, 450, 75);
+		definition.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 20));
+		definition.setLineWrap(true);
+		definition.setEditable(false);
+		definition.setText("");
+		panel.add(definition);
 		add(panel);
 
 		setSize(550, 400);
@@ -101,14 +171,14 @@ public class ClientMain extends JFrame {
 		});
 	}
 
-	// Å¬¶óÀÌ¾ğÆ® ÇÁ·Î±×·¥ µ¿ÀÛ
+	// í´ë¼ì´ì–¸íŠ¸ í”„ë¡œê·¸ë¨ ë™ì‘
 	public void startClient(String IP, int port) {
 		Thread thread = new Thread() {
 			public void run() {
 				try {
 					socket = new Socket(IP, port);
-					
-					// Ã¹¼ø¼­¸é Ã¤ÆÃ È°¼ºÈ­
+
+					// ì²«ìˆœì„œë©´ ì±„íŒ… í™œì„±í™”
 					InputStream in = socket.getInputStream();
 					byte[] buffer = new byte[512];
 					int length = in.read(buffer);
@@ -117,24 +187,24 @@ public class ClientMain extends JFrame {
 					}
 					String message = new String(buffer, 0, length, "UTF-8");
 					textField.setText("");
-					if(message.trim().equals("1"))
+					if (message.trim().equals("1"))
 						myTurn = true;
-					if(myTurn) {
+					if (myTurn) {
 						inputText.setEditable(true);
 						sendButton.setVisible(true);
 						myTurn = false;
 					} else {
-						inputText.setText("»ó´ë¹æÀÌ ÀÔ·Â ÁßÀÔ´Ï´Ù.");
+						inputText.setText("ìƒëŒ€ë°©ì´ ì…ë ¥ ì¤‘ì…ë‹ˆë‹¤.");
 						inputText.setEditable(false);
 						sendButton.setVisible(false);
 						myTurn = true;
 					}
-					
+
 					receive();
 				} catch (Exception e) {
 					if (!socket.isClosed()) {
 						stopClient();
-						System.out.println("[¼­¹ö Á¢¼Ó ½ÇÆĞ]");
+						System.out.println("[]");
 						System.exit(0);
 					}
 				}
@@ -143,7 +213,7 @@ public class ClientMain extends JFrame {
 		thread.start();
 	}
 
-	// Å¬¶óÀÌ¾ğÆ® ÇÁ·Î±×·¥ Á¾·á
+	// í´ë¼ì´ì–¸íŠ¸ í”„ë¡œê·¸ë¨ ì¢…ë£Œ
 	public void stopClient() {
 		try {
 			if (socket != null && !socket.isClosed()) {
@@ -154,7 +224,7 @@ public class ClientMain extends JFrame {
 		}
 	}
 
-	// ¸Ş½ÃÁö ¼ö½Å
+	// ë©”ì‹œì§€ ìˆ˜ì‹ 
 	public void receive() {
 		while (true) {
 			try {
@@ -168,12 +238,14 @@ public class ClientMain extends JFrame {
 				textField.setText(message);
 				inputText.setText("");
 				
-				if(myTurn) {
+				definition.setText(getDefinition(message));
+
+				if (myTurn) {
 					inputText.setEditable(true);
 					sendButton.setVisible(true);
 					myTurn = false;
 				} else {
-					inputText.setText("»ó´ë¹æÀÌ ÀÔ·Â ÁßÀÔ´Ï´Ù.");
+					inputText.setText("ìƒëŒ€ë°©ì´ ì…ë ¥ ì¤‘ì…ë‹ˆë‹¤.");
 					inputText.setEditable(false);
 					sendButton.setVisible(false);
 					myTurn = true;
@@ -185,7 +257,7 @@ public class ClientMain extends JFrame {
 		}
 	}
 
-	// ¸Ş½ÃÁö Àü¼Û
+	// ë©”ì‹œì§€ ì „ì†¡
 	public void send(String message) {
 		Thread thread = new Thread() {
 			public void run() {
@@ -200,6 +272,91 @@ public class ClientMain extends JFrame {
 			}
 		};
 		thread.start();
+	}
+	
+	public boolean inspectionWord(String input) {		// ì²«ê¸€ìì™€ ëê¸€ìê°€ ë§ëŠ”ì§€ í™•ì¸
+		char first = ' ';
+		char last;
+		try {
+			first = input.charAt(0);
+			last = textField.getText().charAt(textField.getText().length() - 1);
+		} catch (StringIndexOutOfBoundsException e2) {
+			last = first;
+		}
+		
+		if(first == last) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public boolean checkOverlap(String input) {		// ë‹¨ì–´ ì¤‘ë³µ ì²´í¬
+		for(String word : wordList) {
+			if(word.equals(input)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	public boolean existenceDictionary(String input) {		// ë‹¨ì–´ê°€ ì‚¬ì „ì— ìˆëŠ” ì§€ í™•ì¸
+		try {
+			// parsingí•  url ì§€ì •(API í‚¤ í¬í•¨í•´ì„œ)
+			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q=" + input;
+
+			DocumentBuilderFactory dbFactoty = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactoty.newDocumentBuilder();
+			Document doc = dBuilder.parse(url);
+
+			// íŒŒì‹±í•  tag
+			NodeList nList = doc.getElementsByTagName("item");
+			
+			for (int temp = 0; temp < nList.getLength(); temp++) {
+				Node nNode = nList.item(temp);
+				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element eElement = (Element) nNode;
+//					System.out.println("----------------------------------");
+//					System.out.println("target_code : " + getTagValue("target_code", eElement));
+//					System.out.println("word : " + getTagValue("word", eElement));
+//					System.out.println("pos : " + getTagValue("pos", eElement));
+//					System.out.println("definition : " + getTagValue("definition", eElement1));
+					if(getTagValue("word", eElement).length() > 0 && getTagValue("pos", eElement).equals("ëª…ì‚¬")) {
+						return true;
+					}
+				} 
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return false; 
+	}
+	public String getTagValue(String tag, Element eElement) {
+		NodeList nlList = eElement.getElementsByTagName(tag).item(0).getChildNodes();
+		Node nValue = (Node) nlList.item(0);
+		if (nValue == null)
+			return null;
+		return nValue.getNodeValue();
+	}
+	public String getDefinition(String input) {	
+		try {
+			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q=" + input;
+
+			DocumentBuilderFactory dbFactoty = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactoty.newDocumentBuilder();
+			Document doc = dBuilder.parse(url);
+			
+			NodeList nList = doc.getElementsByTagName("sense");
+			
+			for (int temp = 0; temp < nList.getLength(); temp++) {
+				Node nNode = nList.item(temp);
+				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element eElement = (Element) nNode;
+					return getTagValue("definition", eElement);
+				} 
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return ""; 
 	}
 
 	public static void main(String[] args) {

@@ -33,31 +33,31 @@ public class ServerMain extends JFrame {
 	private JButton toggleButton;
 
 	public ServerMain() {
-		super("³¡¸»ÀÕ±â ¼­¹ö");
+		super("ëë§ì‡ê¸° ì„œë²„");
 
 		panel = new JPanel();
 
 		textArea = new JTextArea(15, 19);
-		textArea.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 25));
+		textArea.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 25));
 		textArea.setEditable(false);
 		panel.add(textArea);
 
-		toggleButton = new JButton("½ÃÀÛÇÏ±â");
-		toggleButton.setFont(new Font("³ª´®¹Ù¸¥°íµñ", Font.PLAIN, 20));
+		toggleButton = new JButton("ì‹œì‘í•˜ê¸°");
+		toggleButton.setFont(new Font("ë‚˜ëˆ”ë°”ë¥¸ê³ ë”•", Font.PLAIN, 20));
 		toggleButton.addMouseListener(new MouseAdapter() {
-			public void mousePressed(MouseEvent e) { // ¸¶¿ì½º°¡ ´­·ÈÀ»¶§
-				if (toggleButton.getText().equals("½ÃÀÛÇÏ±â")) {
+			public void mousePressed(MouseEvent e) { 
+				if (toggleButton.getText().equals("ì‹œì‘í•˜ê¸°")) {
 					startServer(IP, port);
-					String message = String.format("¼­¹ö ½ÃÀÛ\n", IP, port);
+					String message = String.format("ì„œë²„ ì‹œì‘\n", IP, port);
 					textArea.append(message);
 
-					toggleButton.setText("Á¾·áÇÏ±â");
+					toggleButton.setText("ì¢…ë£Œí•˜ê¸°");
 				} else {
 					stopServer();
-					String message = String.format("¼­¹ö Á¾·á\n", IP, port);
+					String message = String.format("ì„œë²„ ì¢…ë£Œ\n", IP, port);
 					textArea.append(message);
 
-					toggleButton.setText("½ÃÀÛÇÏ±â");
+					toggleButton.setText("ì‹œì‘í•˜ê¸°");
 				}
 			}
 		});
@@ -72,7 +72,7 @@ public class ServerMain extends JFrame {
 
 	}
 
-	public void startServer(String IP, int port) { // ¼­¹ö ½ÃÀÛ
+	public void startServer(String IP, int port) { // ì„œë²„ ì‹œì‘
 		try {
 			serverSocket = new ServerSocket();
 			serverSocket.bind(new InetSocketAddress(IP, port));
@@ -84,7 +84,7 @@ public class ServerMain extends JFrame {
 			return;
 		}
 
-		// Å¬¶óÀÌ¾ğÆ®°¡ Á¢¼ÓÇÒ ¶§±îÁö ±â´Ù¸²
+		// í´ë¼ì´ì–¸íŠ¸ê°€ ì ‘ì†í•  ë•Œê¹Œì§€ ê¸°ë‹¤ë¦¼
 		Runnable thread = new Runnable() {
 			int count = 0;
 			@Override
@@ -94,9 +94,9 @@ public class ServerMain extends JFrame {
 					try {
 						Socket socket = serverSocket.accept();
 						clients.add(new Client(socket));
-						//System.out.println("[Å¬¶óÀÌ¾ğÆ® Á¢¼Ó] " + socket.getRemoteSocketAddress() + " : " + Thread.currentThread().getName());
+						//System.out.println("[í´ë¼ì´ì–¸íŠ¸ ì ‘ì†] " + socket.getRemoteSocketAddress() + " : " + Thread.currentThread().getName());
 						
-						// Å¬¶óÀÌ¾ğÆ®¿¡°Ô ¸Ş½ÃÁö
+						// í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ìˆœì„œ ë©”ì‹œì§€
 						PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 						writer.println(String.valueOf(clients.size()));
 						writer.flush();
@@ -114,20 +114,20 @@ public class ServerMain extends JFrame {
 		threadPool.submit(thread);
 	}
 
-	public void stopServer() { // ¼­¹ö ÁßÁö
+	public void stopServer() { // ì„œë²„ ì¢…ë£Œ
 		try {
-			// ÀÛµ¿ÁßÀÎ ¸ğµç ¼ÒÄÏ ´İ±â
+			// ì‘ë™ ì¤‘ì¸ ëª¨ë“  ì†Œì¼“ ë‹«ê¸°
 			Iterator<Client> iterator = clients.iterator();
 			while (iterator.hasNext()) {
 				Client client = iterator.next();
 				client.socket.close();
 				iterator.remove();
 			}
-			// ¼­¹ö ¼ÒÄÏ °´Ã¼ ´İ±â
+			// ì„œë²„ ì†Œì¼“ ê°ì²´ ë‹«ê¸°
 			if (serverSocket != null && !serverSocket.isClosed()) {
 				serverSocket.close();
 			}
-			// ½º·¹µåÇ® Á¾·á
+			// ìŠ¤ë ˆë“œí’€ ì¢…ë£Œ
 			if (threadPool != null && !threadPool.isShutdown()) {
 				threadPool.shutdown();
 			}
