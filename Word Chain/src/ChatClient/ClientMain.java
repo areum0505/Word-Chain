@@ -1,6 +1,5 @@
 package ChatClient;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -14,7 +13,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -31,7 +29,7 @@ import org.w3c.dom.NodeList;
 
 public class ClientMain extends JFrame {
 	private Socket socket;
-	
+
 	private ArrayList<String> wordList;
 
 	private boolean myTurn = false;
@@ -46,11 +44,10 @@ public class ClientMain extends JFrame {
 	private JButton sendButton;
 	private JButton connectionButton;
 	private JTextArea definition;
-	
 
 	public ClientMain() {
 		super("끝말잇기");
-		
+
 		wordList = new ArrayList<String>();
 
 		panel = new JPanel();
@@ -59,7 +56,7 @@ public class ClientMain extends JFrame {
 		userName = new JTextField("홍길동");
 		userName.setBounds(15, 5, 135, 25);
 		panel.add(userName);
-		IPText = new JTextField("127.0.0.1");	// 10.96.123.53
+		IPText = new JTextField("127.0.0.1"); // 10.96.123.53
 		IPText.setBounds(155, 5, 135, 25);
 		panel.add(IPText);
 		portText = new JTextField("9876");
@@ -91,7 +88,7 @@ public class ClientMain extends JFrame {
 			}
 		});
 		panel.add(connectionButton);
-		
+
 		guidance = new JLabel();
 		guidance.setBounds(75, 35, 400, 20);
 		guidance.setHorizontalAlignment(JLabel.CENTER);
@@ -110,11 +107,12 @@ public class ClientMain extends JFrame {
 		inputText = new JTextField();
 		inputText.setBounds(50, 115, 365, 30);
 		inputText.setFont(new Font("나눔바른고딕", Font.PLAIN, 20));
+		inputText.setHorizontalAlignment(JTextField.CENTER);
 		inputText.setText("");
 		inputText.setEditable(false);
 		inputText.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
-				if(e.getKeyCode() == 10) {
+				if (e.getKeyCode() == 10) {
 					sendButton.doClick();
 				}
 			}
@@ -132,8 +130,8 @@ public class ClientMain extends JFrame {
 				boolean checkLength = inputStr.length() >= 2 ? true : false;
 				boolean checkOverlap = checkOverlap(inputStr);
 				boolean existDict = existenceDictionary(inputStr);
-				
-				if(inspectionWord && checkLength && checkOverlap && existDict ) {
+
+				if (inspectionWord && checkLength && checkOverlap && existDict) {
 					wordList.add(inputStr);
 					guidance.setText("");
 					send(inputStr);
@@ -141,7 +139,7 @@ public class ClientMain extends JFrame {
 					guidance.setText("마지막 글자와 첫 글자가 맞지 않습니다.");
 				} else if (!checkLength) {
 					guidance.setText("글자 수가 너무 적습니다.");
-				} else if(!checkOverlap) {
+				} else if (!checkOverlap) {
 					guidance.setText("이전에 나왔던 단어입니다.");
 				} else if (!existDict) {
 					guidance.setText("사전에 없는 단어입니다.");
@@ -149,7 +147,7 @@ public class ClientMain extends JFrame {
 			}
 		});
 		panel.add(sendButton);
-		
+
 		definition = new JTextArea();
 		definition.setBounds(50, 150, 450, 75);
 		definition.setFont(new Font("나눔바른고딕", Font.PLAIN, 20));
@@ -237,7 +235,7 @@ public class ClientMain extends JFrame {
 				String message = new String(buffer, 0, length, "UTF-8");
 				textField.setText(message);
 				inputText.setText("");
-				
+
 				definition.setText(getDefinition(message));
 
 				if (myTurn) {
@@ -273,35 +271,83 @@ public class ClientMain extends JFrame {
 		};
 		thread.start();
 	}
-	
-	public boolean inspectionWord(String input) {		// 첫글자와 끝글자가 맞는지 확인
-		char first = ' ';
-		char last;
+
+	// 첫글자와 끝글자가 맞는지 확인
+	public boolean inspectionWord(String input) {
+		char last = ' ';		// 상대방이 입력한 단어의 마지막 글자
+		char first;				// 내가 입력할 단어의 첫번째 글자
 		try {
-			first = input.charAt(0);
-			last = textField.getText().charAt(textField.getText().length() - 1);
+			last = input.charAt(0);
+			first = textField.getText().charAt(textField.getText().length() - 1);
 		} catch (StringIndexOutOfBoundsException e2) {
-			last = first;
+			first = last;
 		}
-		
-		if(first == last) {
+
+		if (last == first) {
 			return true;
 		} else {
+			if (isInitialLaw(first, last)) {
+				return true;
+			}
 			return false;
 		}
 	}
-	public boolean checkOverlap(String input) {		// 단어 중복 체크
-		for(String word : wordList) {
-			if(word.equals(input)) {
+
+	public boolean isInitialLaw(char first, char last) { // 두음법칙
+		String[] CHO = { "ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ",
+				"ㅎ" };
+		String[] JOONG = { "ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ",
+				"ㅡ", "ㅢ", "ㅣ" };
+		String[] JONG = { "", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ",
+				"ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ" };
+
+		if (first >= 0xAC00 && last >= 0xAC00) { // 한글일 경우만 시작해야 하기 때문에 0xAC00부터 아래의 로직을 실행한다
+			// System.out.print(first + "=>");
+			first = (char) (first - 0xAC00);
+			char first_cho = (char) (first / 28 / 21);
+			char first_joong = (char) ((first) / 28 % 21);
+			char first_jong = (char) (first % 28); // 종성의 첫번째는 채움이기 때문에
+			// System.out.println(CHO[first_cho] + JOONG[first_joong] + JONG[first_jong]);
+
+			// System.out.print(last + "=>");
+			last = (char) (last - 0xAC00);
+			char last_cho = (char) (last / 28 / 21);
+			char last_joong = (char) ((last) / 28 % 21);
+			char last_jong = (char) (last % 28); // 종성의 첫번째는 채움이기 때문에
+			// System.out.println(CHO[last_cho] + JOONG[last_joong] + JONG[last_jong]);
+
+			if (CHO[first_cho].equals("ㄴ") && CHO[last_cho].equals("ㅇ")) {
+				// System.out.println("ㄴ  -> ㅇ");
+				if (JOONG[first_joong].equals(JOONG[last_joong]) && JONG[first_jong].equals(JONG[last_jong])) {
+					return true;
+				}
+			} else if (CHO[first_cho].equals("ㄹ") && (CHO[last_cho].equals("ㅇ") || CHO[last_cho].equals("ㄴ"))) {
+				// System.out.println("ㄹ -> ㅇ, ㄴ");
+				if (JOONG[first_joong].equals(JOONG[last_joong]) && JONG[first_jong].equals(JONG[last_jong])) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	// 단어 중복 체크
+	public boolean checkOverlap(String input) {
+		for (String word : wordList) {
+			if (word.equals(input)) {
 				return false;
 			}
 		}
 		return true;
 	}
-	public boolean existenceDictionary(String input) {		// 단어가 사전에 있는 지 확인
+
+	// 단어가 사전에 있는 지 확인
+	public boolean existenceDictionary(String input) {
 		try {
 			// parsing할 url 지정(API 키 포함해서)
-			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q=" + input;
+			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q="
+					+ input;
 
 			DocumentBuilderFactory dbFactoty = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactoty.newDocumentBuilder();
@@ -309,7 +355,7 @@ public class ClientMain extends JFrame {
 
 			// 파싱할 tag
 			NodeList nList = doc.getElementsByTagName("item");
-			
+
 			for (int temp = 0; temp < nList.getLength(); temp++) {
 				Node nNode = nList.item(temp);
 				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -319,16 +365,17 @@ public class ClientMain extends JFrame {
 //					System.out.println("word : " + getTagValue("word", eElement));
 //					System.out.println("pos : " + getTagValue("pos", eElement));
 //					System.out.println("definition : " + getTagValue("definition", eElement1));
-					if(getTagValue("word", eElement).length() > 0 && getTagValue("pos", eElement).equals("명사")) {
+					if (getTagValue("word", eElement).length() > 0 && getTagValue("pos", eElement).equals("명사")) {
 						return true;
 					}
-				} 
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return false; 
+		return false;
 	}
+
 	public String getTagValue(String tag, Element eElement) {
 		NodeList nlList = eElement.getElementsByTagName(tag).item(0).getChildNodes();
 		Node nValue = (Node) nlList.item(0);
@@ -336,27 +383,29 @@ public class ClientMain extends JFrame {
 			return null;
 		return nValue.getNodeValue();
 	}
-	public String getDefinition(String input) {	
+
+	public String getDefinition(String input) { // 단어의 정의
 		try {
-			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q=" + input;
+			String url = "https://stdict.korean.go.kr/api/search.do?certkey_no=2403&key=AA0EB289572D8E8198B28D56E7DA1BF4&type_search=search&q="
+					+ input;
 
 			DocumentBuilderFactory dbFactoty = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactoty.newDocumentBuilder();
 			Document doc = dBuilder.parse(url);
-			
+
 			NodeList nList = doc.getElementsByTagName("sense");
-			
+
 			for (int temp = 0; temp < nList.getLength(); temp++) {
 				Node nNode = nList.item(temp);
 				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
 					Element eElement = (Element) nNode;
 					return getTagValue("definition", eElement);
-				} 
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return ""; 
+		return "";
 	}
 
 	public static void main(String[] args) {
